@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lift Log">
+<title>Lift Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EEF1F4;--panel:#FFFFFF;--fg:#14202C;--muted:#566474;--line:#D3DAE2;
+  --accent:#1B4FC4;--accent-fg:#FFFFFF;--done:#157A50;--done-soft:#DDF1E7;--field:#F5F7F9;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10161D;--panel:#19222C;--fg:#EAF0F6;--muted:#9DABBA;--line:#2F3B48;
+  --accent:#7FA6FF;--accent-fg:#0E1722;--done:#5FD3A0;--done-soft:#183A2D;--field:#111A23;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161D;--panel:#19222C;--fg:#EAF0F6;--muted:#9DABBA;--line:#2F3B48;
+  --accent:#7FA6FF;--accent-fg:#0E1722;--done:#5FD3A0;--done-soft:#183A2D;--field:#111A23;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:400 16px/1.4 var(--body);-webkit-tap-highlight-color:transparent;padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:960px;margin:0 auto;padding-block:24px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font:700 40px/1 var(--display);margin:0;letter-spacing:.01em;text-transform:uppercase}
+#status{color:var(--muted);font-size:14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.tab{appearance:none;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;min-height:72px;font-family:var(--body)}
+.tab b{display:block;font:700 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.tab span{color:var(--muted);font-size:14px}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.tab[aria-selected="true"] span{color:var(--accent-fg)}
+.rule{color:var(--muted);font-size:15px;margin:14px 0 12px;max-width:70ch}
+.colhead,.row{display:grid;grid-template-columns:52px minmax(0,1fr) 96px 76px 76px;gap:10px;align-items:center}
+.colhead{padding:0 12px 6px;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.colhead div:nth-child(n+3){text-align:center}
+.list{display:grid;gap:8px}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.row.done{background:var(--done-soft);border-color:var(--done)}
+.check{position:relative;width:48px;height:48px;display:block;cursor:pointer}
+.check input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.check i{position:absolute;inset:0;border:2px solid var(--muted);border-radius:9px;background:var(--field);display:grid;place-items:center;font-style:normal;font-size:28px;font-weight:700;color:transparent}
+.check input:checked+i{background:var(--done);border-color:var(--done);color:var(--panel)}
+.check input:disabled+i{opacity:.4}
+.check input:focus-visible+i{outline:3px solid var(--accent);outline-offset:2px}
+.name{min-width:0}
+.name b{display:block;font-weight:600;font-size:18px;line-height:1.2}
+.next{display:block;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.next.up{color:var(--done);font-weight:600}
+.num{width:100%;height:52px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--fg);text-align:center;font:600 21px var(--body);font-variant-numeric:tabular-nums;padding:0 4px}
+.num:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.mob{display:none}
+.bar{position:sticky;bottom:0;margin-top:14px;padding:12px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#finish{appearance:none;border:0;flex:1 1 240px;min-height:60px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font:700 24px var(--display);letter-spacing:.03em;text-transform:uppercase;cursor:pointer}
+#finish:disabled{opacity:.45;cursor:default}
+#undo{appearance:none;background:none;border:2px solid var(--line);color:var(--fg);min-height:60px;border-radius:10px;padding:0 18px;font:600 16px var(--body);cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (max-width:640px){
+  .colhead{display:none}
+  .row{grid-template-columns:52px repeat(3,minmax(0,1fr))}
+  .name{grid-column:2/-1;grid-row:1}
+  .check{grid-row:1}
+  .field{grid-row:2}
+  .field:nth-of-type(2){grid-column:2}
+  .mob{display:block;color:var(--muted);font-size:12px;text-align:center;margin-bottom:2px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Lift Log</h1><div id="status" role="status">Saved on this device</div></header>
+  <div class="tabs" role="tablist" aria-label="Workout days">
+    <button class="tab" role="tab" id="tab-push" data-day="push"><b>Push + Quads</b><span>Mon · Wed · Fri</span></button>
+    <button class="tab" role="tab" id="tab-pull" data-day="pull"><b>Pull + Legs</b><span>Tue · Thu · Sat</span></button>
+  </div>
+  <p class="rule">Tick an exercise when you hit its reps on both sets. Next session adds 1 rep to the lower set. Once both sets reach 8, it adds 2.5 kg and drops back to 6 and 6. Use 0 kg for bodyweight.</p>
+  <div class="colhead" aria-hidden="true"><div>Done</div><div>Exercise</div><div>kg</div><div>Set 1</div><div>Set 2</div></div>
+  <div class="list" id="list"></div>
+  <div class="bar">
+    <button id="undo" hidden>Undo last session</button>
+    <button id="finish" disabled>Finish session</button>
+  </div>
+</div>
+
+<script>
+const DAYS={
+  push:["Hack squat machine","Incline bench press","Leg press machine","Overhead press","Kneeling ab crunches","Dips","Hanging leg raises","Cable lateral raises","Close-grip bench press","Tricep pushdowns"],
+  pull:["Pull-ups","RDLs","Lat pulldowns","Hip thrust machine","Chest-supported rows","Preacher curls","Back extensions","Hammer curls"]
+};
+const STEP=2.5,MIN=6,MAX=8,KEY="lift-log-v1";
+
+function progress(w,r){
+  const a=r[0],b=r[1];
+  if(a>=MAX&&b>=MAX)return{w:w+STEP,r:[MIN,MIN]};
+  return a<=b?{w,r:[a+1,b]}:{w,r:[a,b+1]};
+}
+
+const id=(d,i)=>d+"-"+i;
+function blank(){
+  const ex={};
+  for(const d in DAYS)DAYS[d].forEach((_,i)=>ex[id(d,i)]={w:null,r:[MIN,MIN],done:false});
+  return{ex,undo:null,lastDone:{}};
+}
+function merge(s){
+  const b=blank();
+  if(!s||!s.ex)return b;
+  for(const k in b.ex)if(s.ex[k])b.ex[k]={w:s.ex[k].w??null,r:[...(s.ex[k].r||[MIN,MIN])],done:!!s.ex[k].done};
+  b.undo=s.undo||null;b.lastDone=s.lastDone||{};
+  return b;
+}
+function readLocal(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){status("Couldn't save on this device")}}
+
+let state=merge(readLocal());
+let day=[0,1,3,5].includes(new Date().getDay())?"push":"pull";
+
+const $=s=>document.querySelector(s);
+const status=t=>{$("#status").textContent=t};
+const fmt=n=>Number.isInteger(n)?String(n):n.toFixed(1);
+const started=e=>typeof e.w==="number"&&e.w>=0&&e.r[0]>0&&e.r[1]>0;
+
+function hint(k){
+  const e=state.ex[k],el=document.getElementById("next-"+k),row=document.getElementById("row-"+k),box=document.getElementById("chk-"+k);
+  box.disabled=!started(e);
+  if(box.disabled&&e.done)e.done=false;
+  box.checked=e.done;
+  row.classList.toggle("done",e.done);
+  el.classList.remove("up");
+  if(!started(e)){el.textContent="Enter your starting weight";return}
+  if(!e.done){el.textContent="Tick when you hit these reps";return}
+  const n=progress(e.w,e.r);
+  el.textContent="Next: "+fmt(n.w)+" kg, "+n.r[0]+" and "+n.r[1]+" reps"+(n.w>e.w?" (+2.5 kg)":"");
+  if(n.w>e.w)el.classList.add("up");
+}
+function bar(){
+  const n=DAYS[day].filter((_,i)=>state.ex[id(day,i)].done).length;
+  const f=$("#finish");
+  f.disabled=!n;
+  f.textContent=n?"Finish session ("+n+" of "+DAYS[day].length+" ticked)":"Finish session";
+  $("#undo").hidden=!state.undo;
+}
+function render(){
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.day===day));
+  const list=$("#list");list.textContent="";
+  DAYS[day].forEach((name,i)=>{
+    const k=id(day,i),e=state.ex[k],row=document.createElement("div");
+    row.className="row";row.id="row-"+k;
+    row.innerHTML=`<label class="check"><input type="checkbox" id="chk-${k}" aria-label="Done: ${name}"><i aria-hidden="true">✓</i></label>
+      <div class="name"><b>${i+1}. ${name}</b><span class="next" id="next-${k}"></span></div>
+      <div class="field"><span class="mob">kg</span><input class="num" id="w-${k}" type="number" inputmode="decimal" step="0.5" min="0" aria-label="${name} weight in kg" placeholder="kg"></div>
+      <div class="field"><span class="mob">Set 1</span><input class="num" id="a-${k}" type="number" inputmode="numeric" min="1" aria-label="${name} set 1 reps"></div>
+      <div class="field"><span class="mob">Set 2</span><input class="num" id="b-${k}" type="number" inputmode="numeric" min="1" aria-label="${name} set 2 reps"></div>`;
+    list.append(row);
+    const w=row.querySelector("#w-"+k),a=row.querySelector("#a-"+k),b=row.querySelector("#b-"+k);
+    w.value=e.w??"";a.value=e.r[0];b.value=e.r[1];
+    const edit=()=>{
+      e.w=w.value===""?null:Math.max(0,Number(w.value));
+      e.r=[Math.max(0,parseInt(a.value)||0),Math.max(0,parseInt(b.value)||0)];
+      hint(k);bar();save();
+    };
+    [w,a,b].forEach(x=>x.addEventListener("input",edit));
+    row.querySelector("#chk-"+k).addEventListener("change",ev=>{e.done=ev.target.checked;hint(k);bar();save()});
+    hint(k);
+  });
+  bar();
+}
+function finish(){
+  const before={};
+  DAYS[day].forEach((_,i)=>{
+    const k=id(day,i),e=state.ex[k];
+    if(!e.done)return;
+    before[k]={w:e.w,r:[...e.r]};
+    const n=progress(e.w,e.r);
+    e.w=n.w;e.r=n.r;e.done=false;
+  });
+  state.undo={day,before};
+  state.lastDone[day]=new Date().toISOString().slice(0,10);
+  render();save();
+  status("Session saved. Next numbers are ready");
+}
+function undo(){
+  const u=state.undo;if(!u)return;
+  for(const k in u.before){const e=state.ex[k];e.w=u.before[k].w;e.r=u.before[k].r;e.done=true}
+  day=u.day;state.undo=null;
+  render();save();
+  status("Last session undone");
+}
+
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{day=t.dataset.day;render()}));
+$("#finish").addEventListener("click",finish);
+$("#undo").addEventListener("click",undo);
+render();
+</script>
+</body>
+</html>
